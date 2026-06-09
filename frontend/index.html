@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>探途 — AI 旅行规划</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div class="h-inner">
+        <span class="h-logo">探途</span>
+        <span class="h-status" id="h-status">
+          <span class="h-dot"></span>
+          <span id="h-text">就绪</span>
+        </span>
+      </div>
+    </header>
+
+    <div id="main">
+      <!-- LEFT PANEL: form / progress / results (same position, transitions) -->
+      <div id="panel">
+        <!-- FORM -->
+        <div id="mode-form" class="pm active">
+          <div class="pf-header">
+            <span class="pf-title">📍 规划你的旅行</span>
+          </div>
+          <form id="plan-form" class="pf-body" autocomplete="off">
+            <div class="pf-row">
+              <input type="text" id="destination" placeholder="例如：北京、东京、巴黎" class="pf-inp" required>
+              <input type="text" id="origin" placeholder="例如：上海、广州" class="pf-inp">
+            </div>
+            <div class="pf-row">
+              <input type="date" id="start-date" class="pf-inp pf-sm">
+              <input type="date" id="end-date" class="pf-inp pf-sm">
+              <span class="pf-label">人数</span>
+              <div class="pf-num">
+                <button type="button" onclick="adj(-1)">−</button>
+                <input type="number" id="travelers" value="1" min="1" max="99">
+                <button type="button" onclick="adj(1)">+</button>
+              </div>
+            </div>
+            <div class="pf-row">
+              <input type="number" id="budget" placeholder="预算（元）" class="pf-inp pf-sm">
+              <input type="text" id="interests-custom" placeholder="美食、历史、自然…" class="pf-inp">
+            </div>
+            <input type="text" id="special" placeholder="特殊要求（可选：素食、无障碍通道等）" class="pf-inp" style="width:100%">
+            <button type="submit" id="go-btn" class="pf-go" disabled>
+              <span class="pf-go-t">🚀 开始规划</span>
+              <span class="pf-go-l hidden"><span class="pf-spin"></span> 规划中…</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- PROGRESS (replaces form when running) -->
+        <div id="mode-progress" class="pm">
+          <div class="pf-header"><span class="pf-title">🧠 AI 智能体工作中</span></div>
+          <div class="prog-steps" id="prog-steps">
+            <div class="ps" data-a="destination"><div class="ps-d">📌</div><div class="ps-b"><span class="ps-n">目的地研究</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
+            <div class="ps" data-a="flight"><div class="ps-d">✈️</div><div class="ps-b"><span class="ps-n">航班搜索</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
+            <div class="ps" data-a="hotel"><div class="ps-d">🏨</div><div class="ps-b"><span class="ps-n">住宿推荐</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
+            <div class="ps" data-a="dining"><div class="ps-d">🍽️</div><div class="ps-b"><span class="ps-n">美食推荐</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
+            <div class="ps" data-a="budget"><div class="ps-d">💰</div><div class="ps-b"><span class="ps-n">预算规划</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
+            <div class="ps" data-a="itinerary"><div class="ps-d">📅</div><div class="ps-b"><span class="ps-n">行程编排</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
+          </div>
+        </div>
+
+        <!-- RESULTS (replaces progress when done) -->
+        <div id="mode-result" class="pm">
+          <div class="pf-header">
+            <span class="pf-title">📋 旅行计划</span>
+            <button class="pf-reset" onclick="resetAll()">↩ 重新规划</button>
+          </div>
+          <div class="res-tabs">
+            <button class="rt-btn active" data-tab="plan" onclick="switchResTab('plan',this)">📅 行程</button>
+            <button class="rt-btn" data-tab="details" onclick="switchResTab('details',this)">📊 详情</button>
+          </div>
+          <div class="res-scroll" id="res-plan"></div>
+          <div class="res-scroll hidden" id="res-details"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: MAP (always visible) -->
+      <div id="map-area">
+        <div id="explore-map"></div>
+        <!-- POI controls overlay -->
+        <div class="poi-bar" id="poi-bar">
+          <div class="poi-filter">
+            <button class="pf-btn active" data-type="110200" title="Attractions">🏛️</button>
+            <button class="pf-btn active" data-type="100000" title="Hotels">🏨</button>
+            <button class="pf-btn active" data-type="050000" title="Restaurants">🍽️</button>
+          </div>
+          <span class="poi-info" id="poi-info">Enter destination</span>
+        </div>
+        <!-- Selection tags -->
+        <div id="sel-bar" class="sel-bar hidden">
+          <div class="sel-tags" id="sel-tags"></div>
+          <div class="sel-actions">
+            <span class="sel-c" id="sel-c">0</span>
+            <button id="clear-all-btn" class="sel-clr">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="state.js"></script>
+  <script src="net.js"></script>
+  <script src="map.js"></script>
+  <script src="ui.js"></script>
+  <script src="app.js?v=7"></script>
+</body>
+</html>

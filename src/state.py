@@ -1,0 +1,30 @@
+from typing import Optional, Any, Annotated
+from typing_extensions import TypedDict
+import operator
+
+
+class TravelRequest(TypedDict):
+    destination: Optional[str]
+    start_date: Optional[str]
+    end_date: Optional[str]
+    budget: Optional[float]
+    currency: str
+    travelers: int
+    interests: list[str]
+    origin: Optional[str]
+    special_requirements: Optional[str]
+
+
+class AgentState(TypedDict):
+    messages: Annotated[list[dict[str, Any]], operator.add]
+    travel_request: TravelRequest
+    destination_research: Any     # JSON str (DestinationInfo)
+    flight_options: Any           # list[dict] (FlightOption)
+    hotel_options: Any            # list[dict] (HotelOption)
+    dining_recommendations: Any   # list[dict] (DiningOption)
+    budget_plan: Any              # list[dict] (BudgetItem)
+    itinerary: Any                # list[dict] (DayPlan)
+    map_data: dict
+    trip_plan: Any                # dict (compiled TripPlan)
+    completed_agents: Annotated[list[str], operator.add]
+    errors: Annotated[list[str], operator.add]

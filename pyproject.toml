@@ -1,0 +1,18 @@
+[project]
+name = "travel-planner"
+version = "0.1.0"
+description = "Multi-agent travel planning agent built with LangGraph"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph>=1.1.0",
+    "langchain>=1.2.0",
+    "langchain-openai>=1.1.0",
+    "python-dotenv>=1.0.0",
+    "rich>=13.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.0.0",
+    "requests>=2.31.0",
+    "slowapi>=0.1.9",
+    "tenacity>=8.2.0",
+]
