@@ -1,13 +1,14 @@
 // === State & DOM refs ===
-let selectedPois = [], exploreMarkers = [], exploreMap = null, mapInstance = null;
-let _sseClosed = false, savedTripPlan = null;
+var selectedPois = [], exploreMarkers = [], exploreMap = null, mapInstance = null;
+var _sseClosed = false, savedTripPlan = null;
 
-const $ = id => document.getElementById(id);
-const dest = $("destination"), origin = $("origin");
-const startDate = $("start-date"), endDate = $("end-date");
-const travelers = $("travelers"), budget = $("budget");
-const special = $("special"), interestsCustom = $("interests-custom"), goBtn = $("go-btn");
+var $ = function(id){ return document.getElementById(id); };
+var dest = $("destination"), originInp = $("origin");
+var startDateInp = $("start-date"), endDateInp = $("end-date");
+var travelers = $("travelers"), budget = $("budget");
+var special = $("special") || { value: "" }, interestsCustom = $("interests-custom") || { value: "" };
+var goBtn = $("go-btn");
 
-function esc(s) { return (s || "").replace(/[<>&"']/g," "); }
+function esc(s) { return (s || "").replace(/[<>&\"']/g," "); }
 function escAttr(s) { return (s || "").replace(/"/g,"&quot;"); }
-function adj(d) { const v = parseInt(travelers.value) || 1; travelers.value = Math.max(1, Math.min(99, v + d)); }
+function adj(d) { var v = parseInt(travelers.value) || 1; travelers.value = Math.max(1, Math.min(99, v + d)); }

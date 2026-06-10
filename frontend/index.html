@@ -24,62 +24,88 @@
     <div id="main">
       <!-- LEFT PANEL: form / progress / results (same position, transitions) -->
       <div id="panel">
-        <!-- FORM -->
+        <!-- EMPTY STATE (shown inside form area when no destination yet) -->
         <div id="mode-form" class="pm active">
+          <div class="empty-state show" id="empty-state">
+            <div class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 8 12 8 12s8-6.6 8-12a8 8 0 0 0-8-8z"/></svg></div>
+            <div class="empty-title">开始规划你的旅程</div>
+            <div class="empty-desc">输入目的地后系统将搜索周边地点。点击地图上的地点即可加入行程</div>
+          </div>
           <div class="pf-header">
-            <span class="pf-title">📍 规划你的旅行</span>
+            <span class="pf-title">规划你的旅行</span>
           </div>
           <form id="plan-form" class="pf-body" autocomplete="off">
             <div class="pf-row">
-              <input type="text" id="destination" placeholder="例如：北京、东京、巴黎" class="pf-inp" required>
-              <input type="text" id="origin" placeholder="例如：上海、广州" class="pf-inp">
-            </div>
-            <div class="pf-row">
-              <input type="date" id="start-date" class="pf-inp pf-sm">
-              <input type="date" id="end-date" class="pf-inp pf-sm">
-              <span class="pf-label">人数</span>
-              <div class="pf-num">
-                <button type="button" onclick="adj(-1)">−</button>
-                <input type="number" id="travelers" value="1" min="1" max="99">
-                <button type="button" onclick="adj(1)">+</button>
+              <div class="pf-field" style="flex:2">
+                <label>目的地</label>
+                <input type="text" id="destination" placeholder="杭州" class="pf-inp" required>
+              </div>
+              <div class="pf-field" style="flex:1">
+                <label>出发地</label>
+                <input type="text" id="origin" placeholder="北京" class="pf-inp">
               </div>
             </div>
             <div class="pf-row">
-              <input type="number" id="budget" placeholder="预算（元）" class="pf-inp pf-sm">
-              <input type="text" id="interests-custom" placeholder="美食、历史、自然…" class="pf-inp">
+              <div class="pf-field" style="flex:1">
+                <label>出发日期</label>
+                <input type="date" id="start-date" class="pf-inp">
+              </div>
+              <div class="pf-field" style="flex:1">
+                <label>返程日期</label>
+                <input type="date" id="end-date" class="pf-inp">
+              </div>
+              <div class="pf-field" style="flex:0 1 auto; min-width:80px">
+                <label>人数</label>
+                <div class="pf-num">
+                  <button type="button" onclick="adj(-1)">-</button>
+                  <input type="number" id="travelers" value="1" min="1" max="99">
+                  <button type="button" onclick="adj(1)">+</button>
+                </div>
+              </div>
             </div>
-            <input type="text" id="special" placeholder="特殊要求（可选：素食、无障碍通道等）" class="pf-inp" style="width:100%">
+            <div class="pf-row">
+              <div class="pf-field" style="flex:1">
+                <label>预算 (元)</label>
+                <input type="number" id="budget" placeholder="2000" class="pf-inp">
+              </div>
+              <div class="pf-field" style="flex:2">
+                <label>兴趣偏好</label>
+                <input type="text" id="interests-custom" placeholder="美食, 历史, 自然" class="pf-inp">
+              </div>
+            </div>
             <button type="submit" id="go-btn" class="pf-go" disabled>
-              <span class="pf-go-t">🚀 开始规划</span>
-              <span class="pf-go-l hidden"><span class="pf-spin"></span> 规划中…</span>
+              <span class="pf-go-t">开始规划</span>
+              <span class="pf-go-l hidden"><span class="pf-spin"></span>规划中...</span>
             </button>
           </form>
         </div>
 
         <!-- PROGRESS (replaces form when running) -->
         <div id="mode-progress" class="pm">
-          <div class="pf-header"><span class="pf-title">🧠 AI 智能体工作中</span></div>
+          <div class="pf-header"><span class="pf-title">AI 智能体工作中</span></div>
           <div class="prog-steps" id="prog-steps">
-            <div class="ps" data-a="destination"><div class="ps-d">📌</div><div class="ps-b"><span class="ps-n">目的地研究</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
-            <div class="ps" data-a="flight"><div class="ps-d">✈️</div><div class="ps-b"><span class="ps-n">航班搜索</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
-            <div class="ps" data-a="hotel"><div class="ps-d">🏨</div><div class="ps-b"><span class="ps-n">住宿推荐</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
-            <div class="ps" data-a="dining"><div class="ps-d">🍽️</div><div class="ps-b"><span class="ps-n">美食推荐</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
-            <div class="ps" data-a="budget"><div class="ps-d">💰</div><div class="ps-b"><span class="ps-n">预算规划</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
-            <div class="ps" data-a="itinerary"><div class="ps-d">📅</div><div class="ps-b"><span class="ps-n">行程编排</span><span class="ps-s">等待中</span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
+            <div class="ps" data-a="destination"><div class="ps-d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 8 12 8 12s8-6.6 8-12a8 8 0 0 0-8-8z"/></svg></div><div class="ps-b"><span class="ps-n">目的地研究</span><span class="ps-s">等待中</span><span class="ps-summary"></span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
+            <div class="ps" data-a="flight"><div class="ps-d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></div><div class="ps-b"><span class="ps-n">航班搜索</span><span class="ps-s">等待中</span><span class="ps-summary"></span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
+            <div class="ps" data-a="hotel"><div class="ps-d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 21h18"/><path d="M3 7v14"/><path d="M21 7v14"/><path d="M7 10h2"/><path d="M15 10h2"/><rect x="7" y="3" width="10" height="4" rx="1"/></svg></div><div class="ps-b"><span class="ps-n">住宿推荐</span><span class="ps-s">等待中</span><span class="ps-summary"></span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
+            <div class="ps" data-a="dining"><div class="ps-d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></div><div class="ps-b"><span class="ps-n">美食推荐</span><span class="ps-s">等待中</span><span class="ps-summary"></span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
+            <div class="ps" data-a="route_planner"><div class="ps-d"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="9 18 15 12 9 6"/></svg></div><div class="ps-b"><span class="ps-n">路线规划</span><span class="ps-s">等待中</span><span class="ps-summary"></span></div><div class="ps-i"><div class="ps-sp hidden"></div><span class="ps-ok hidden">✓</span></div></div>
           </div>
         </div>
 
         <!-- RESULTS (replaces progress when done) -->
         <div id="mode-result" class="pm">
           <div class="pf-header">
-            <span class="pf-title">📋 旅行计划</span>
+            <span class="pf-title">旅行计划</span>
             <button class="pf-reset" onclick="resetAll()">↩ 重新规划</button>
           </div>
           <div class="res-tabs">
-            <button class="rt-btn active" data-tab="plan" onclick="switchResTab('plan',this)">📅 行程</button>
-            <button class="rt-btn" data-tab="details" onclick="switchResTab('details',this)">📊 详情</button>
+            <button class="rt-btn active" data-tab="plan" onclick="switchResTab('plan',this)">行程</button>
+            <button class="rt-btn" data-tab="route" onclick="switchResTab('route',this)">路线对比</button>
+            <button class="rt-btn" data-tab="details" onclick="switchResTab('details',this)">详细数据</button>
           </div>
+          <div class="res-nav hidden" id="res-nav"></div>
           <div class="res-scroll" id="res-plan"></div>
+          <div class="res-scroll hidden" id="res-route"></div>
           <div class="res-scroll hidden" id="res-details"></div>
         </div>
       </div>
@@ -113,6 +139,6 @@
   <script src="net.js"></script>
   <script src="map.js"></script>
   <script src="ui.js"></script>
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>

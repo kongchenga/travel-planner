@@ -1,7 +1,8 @@
 """Structured Pydantic schemas for the trip plan.
 
 Each agent outputs its corresponding model.
-TripPlanCompiler assembles them into the final TripPlan.
+RoutePlan = one self-contained route (balanced to budget).
+TripPlan = multiple RoutePlans + shared destination info.
 """
 
 from pydantic import BaseModel, Field
@@ -67,6 +68,19 @@ class DestinationInfo(BaseModel):
     tips: str = ""
 
 
+class RoutePlan(BaseModel):
+    """One self-contained route option, fully budget-balanced."""
+    name: str = ""              # Route label, e.g. "经典打卡路线" / "深度文化路线"
+    description: str = ""       # One-line summary of what this route is about
+    total_cost: float = 0       # Sum of all costs in this route
+    flights: list[FlightOption] = []
+    hotels: list[HotelOption] = []
+    dining: list[DiningOption] = []
+    budget: list[BudgetItem] = []
+    days: list[DayPlan] = []
+    map_data: dict = {}         # Per-route map markers/routes
+
+
 class TripPlan(BaseModel):
     destination: str = ""
     origin: str = ""
@@ -77,9 +91,4 @@ class TripPlan(BaseModel):
     end_date: str = ""
 
     destination_info: DestinationInfo = Field(default_factory=DestinationInfo)
-    flights: list[FlightOption] = []
-    hotels: list[HotelOption] = []
-    dining: list[DiningOption] = []
-    budget: list[BudgetItem] = []
-    days: list[DayPlan] = []
-    map_data: dict = {}        # markers + routes from itinerary agent
+    routes: list[RoutePlan] = []   # Multiple route options

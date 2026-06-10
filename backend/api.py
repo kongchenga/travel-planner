@@ -95,7 +95,7 @@ class PoiData(BaseModel):
 
 # -- Routes --
 @app.post("/api/plan")
-@limiter.limit("10/minute; 30/hour; 100/day")
+@limiter.limit("30/minute; 100/hour; 300/day")
 async def create_plan(req: PlanRequest, request: Request):
     travel_request = req.model_dump()
     try:
@@ -174,6 +174,12 @@ async def startup():
 @app.on_event("shutdown")
 async def shutdown():
     log.info("server shutting down")
+
+
+# -- Health check --
+@app.get("/api/health")
+async def health():
+    return {"status": "ok"}
 
 
 if __name__ == "__main__":

@@ -21,11 +21,10 @@ AGENT_LABELS = {
     "flight": "航班搜索",
     "hotel": "住宿推荐",
     "dining": "美食推荐",
-    "budget": "预算规划",
-    "itinerary": "行程编排",
+    "route_planner": "路线规划",
 }
 
-NODE_ORDER = ["destination", "flight", "hotel", "dining", "budget", "itinerary"]
+NODE_ORDER = ["destination", "flight", "hotel", "dining", "route_planner"]
 
 DEFAULT_MAX_SESSIONS = 20
 DEFAULT_SESSION_TTL = 1800
@@ -43,6 +42,7 @@ class AgentRunner:
         expired = [sid for sid, s in self._sessions.items() if s.get("expires", 0) < now]
         for sid in expired:
             del self._sessions[sid]
+            self._cancelled.discard(sid)
 
     async def start_plan(self, travel_request: dict) -> str:
         self._cleanup_expired()
@@ -74,16 +74,15 @@ class AgentRunner:
                 "flight_options": [],
                 "hotel_options": [],
                 "dining_recommendations": [],
-                "budget_plan": [],
-                "itinerary": [],
+                "routes": [],
                 "map_data": {},
                 "trip_plan": {},
                 "completed_agents": [],
                 "errors": [],
             }
 
-            # Send agent_start for all 6 agents (for pipeline animation)
-            for a in ["destination", "flight", "hotel", "dining", "budget", "itinerary"]:
+            # Send agent_start for all agents (for pipeline animation)
+            for a in ["destination", "flight", "hotel", "dining", "route_planner"]:
                 self._put(queue, loop, ("agent_start", {"agent": a, "label": AGENT_LABELS.get(a, a)}))
 
             for event in graph.stream(initial):
@@ -93,9 +92,12 @@ class AgentRunner:
                 for node_name, output in event.items():
                     if node_name == "finalize":
                         trip_plan = output.get("trip_plan", {})
+                        log.info("finalize: trip_plan destination=%s routes=%d size=%d",
+                                 trip_plan.get("destination"), len(trip_plan.get("routes", [])),
+                                 len(str(trip_plan)))
                         self._put(queue, loop, (
                             "complete",
-                            {"trip_plan": trip_plan, "map_data": trip_plan.get("map_data", {})},
+                            {"trip_plan": trip_plan},
                         ))
                     elif node_name == "parallel":
                         # Synthesize individual agent events from parallel output
@@ -113,19 +115,12 @@ class AgentRunner:
                                     "agent_complete",
                                     {"agent": agent_name, "label": AGENT_LABELS.get(agent_name, agent_name), "content": content},
                                 ))
-                    elif node_name == "budget":
-                        raw = output.get("budget_plan", "")
-                        content = _summarize_agent_output("budget", raw)
+                    elif node_name == "route_planner":
+                        raw = output.get("routes", "")
+                        content = _summarize_agent_output("route_planner", raw)
                         self._put(queue, loop, (
                             "agent_complete",
-                            {"agent": "budget", "label": AGENT_LABELS["budget"], "content": content},
-                        ))
-                    elif node_name == "itinerary":
-                        raw = output.get("itinerary", "")
-                        content = _summarize_agent_output("itinerary", raw)
-                        self._put(queue, loop, (
-                            "agent_complete",
-                            {"agent": "itinerary", "label": AGENT_LABELS["itinerary"], "content": content},
+                            {"agent": "route_planner", "label": AGENT_LABELS["route_planner"], "content": content},
                         ))
 
         except Exception as e:
@@ -175,9 +170,8 @@ def _summarize_agent_output(agent: str, raw) -> str:
             return " | ".join(f"{h.get('name','')} ~{h.get('price_per_night','')}元/晚" for h in raw[:3])
         if agent == "dining":
             return " | ".join(f"{d.get('name','')} {d.get('price_per_person','')}元" for d in raw[:3])
-        if agent == "budget":
-            return " | ".join(f"{b.get('category','')} {b.get('amount','')}元" for b in raw[:5])
-        if agent == "itinerary":
-            return f"{len(raw)}天 " + " ".join(f"D{d.get('day_number','')}:{d.get('title','')}" for d in raw[:5])
+        if agent == "route_planner":
+            labels = [r.get("name", "") for r in raw[:3] if r.get("name")]
+            return f"生成{len(raw)}条路线" + (": " + " · ".join(labels) if labels else "")
         return str(raw)[:200]
     return str(raw)[:200]

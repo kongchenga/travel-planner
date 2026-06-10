@@ -50,6 +50,9 @@ def parse_json(text: str, model: Type[T]) -> T | list[T]:
 
     On failure returns default model() for objects, [] for arrays (heuristic).
     """
+    import logging
+    log = logging.getLogger("json_output")
+
     if not text or not text.strip():
         return model()
     try:
@@ -58,9 +61,30 @@ def parse_json(text: str, model: Type[T]) -> T | list[T]:
             return model()
         data = json.loads(cleaned)
         if isinstance(data, list):
-            return [model(**item) for item in data]
+            parsed = []
+            for item in data:
+                try:
+                    parsed.append(model(**item))
+                except (TypeError, ValueError):
+                    continue
+            if not parsed:
+                # Last resort: if JSON parsed but Pydantic rejected all items,
+                # try to salvage by passing items as dicts directly
+                log.warning("parse_json: %d items parsed from JSON but none validated as %s",
+                            len(data), model.__name__)
+                for item in data:
+                    if isinstance(item, dict) and item.get("name") and item.get("days"):
+                        # Force-create a valid object
+                        try:
+                            parsed.append(model(**{k: item.get(k, "" if isinstance(v, str) else []) for k, v in model.model_fields.items()}))
+                        except:
+                            pass
+                if not parsed:
+                    return [model()]
+            return parsed
         return model(**data)
-    except (json.JSONDecodeError, TypeError, ValueError):
+    except (json.JSONDecodeError, TypeError, ValueError) as e:
+        log.warning("parse_json failed: %s, text[:100]=%s", e, repr(text[:100]))
         return model()
 
 

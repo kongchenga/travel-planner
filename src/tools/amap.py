@@ -390,6 +390,18 @@ def amap_direction(
             })
     else:
         for route in data.get("route", {}).get(route_key, []):
+            # Extract polyline from steps
+            polyline = []
+            for step in route.get("steps", []):
+                poly = step.get("polyline", "")
+                if poly:
+                    for pt in poly.split(";"):
+                        parts = pt.split(",")
+                        if len(parts) == 2:
+                            try:
+                                polyline.append([float(parts[1]), float(parts[0])])
+                            except ValueError:
+                                pass
             results.append({
                 "distance_m": route.get("distance", ""),
                 "duration_s": route.get("duration", ""),
@@ -397,8 +409,47 @@ def amap_direction(
                 "mode": mode,
                 "strategy": strategy,
                 "steps": len(route.get("steps", [])),
+                "polyline": polyline,  # [[lat, lng], ...]
             })
     return results
+
+
+def amap_polyline(coords: list[list[float]]) -> list[list[float]]:
+    """Convert Amap polyline from step polylines to [[lat,lng],...] route.
+    This calls the driving direction API with extensions=all to get the full polyline.
+    """
+    if not coords or len(coords) < 2:
+        return []
+    origin = ",".join(str(c) for c in coords[0])
+    destination = ",".join(str(c) for c in coords[-1])
+    ways = ""
+    if len(coords) > 2:
+        ways = ";".join(",".join(str(c) for c in pt) for pt in coords[1:-1])
+
+    params = {"origin": origin, "destination": destination, "extensions": "all", "strategy": 0}
+    if ways:
+        params["waypoints"] = ways
+
+    data = _request("direction/driving", params)
+    if not data:
+        return []
+    route_data = data.get("route", {})
+    paths = route_data.get("paths", [])
+    if not paths:
+        return []
+
+    polyline = []
+    for step in paths[0].get("steps", []):
+        poly = step.get("polyline", "")
+        if poly:
+            for pt in poly.split(";"):
+                parts = pt.split(",")
+                if len(parts) == 2:
+                    try:
+                        polyline.append([float(parts[1]), float(parts[0])])
+                    except ValueError:
+                        pass
+    return polyline
 
 
 @cache_result(ttl=86400)

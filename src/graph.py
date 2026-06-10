@@ -9,9 +9,8 @@ from src.agents.destination import create_destination_agent
 from src.agents.flight import create_flight_agent
 from src.agents.hotel import create_hotel_agent
 from src.agents.dining import create_dining_agent
-from src.agents.budget import create_budget_agent
-from src.agents.itinerary import create_itinerary_agent
-from src.schemas import TripPlan
+from src.agents.route_planner import create_route_planner_agent
+from src.schemas import TripPlan, RoutePlan
 from src.tools.amap import amap_geocode
 
 log = logging.getLogger("graph")
@@ -22,8 +21,7 @@ def create_travel_graph(llm: DirectLLM) -> StateGraph:
     fa = create_flight_agent(llm)
     ha = create_hotel_agent(llm)
     dia = create_dining_agent(llm)
-    ba = create_budget_agent(llm)
-    ia = create_itinerary_agent(llm)
+    rpa = create_route_planner_agent(llm)
 
     def parallel_agents(state):
         out = {}
@@ -52,42 +50,59 @@ def create_travel_graph(llm: DirectLLM) -> StateGraph:
             except json.JSONDecodeError:
                 pass
 
-        budget_items = state.get("budget_plan", []) or []
-        if isinstance(budget_items, str):
+        routes = state.get("routes", []) or []
+        if isinstance(routes, str):
             try:
-                budget_items = json.loads(budget_items)
+                routes = json.loads(routes)
             except:
-                budget_items = []
+                routes = []
 
-        md = state.get("map_data", {})
-        if "markers" not in md:
-            md["markers"] = []
+        # For each route: geocode hotel/dining locations, normalize map_data
+        for route in routes:
+            md = route.get("map_data", {})
+            if "markers" not in md:
+                md["markers"] = []
 
-        for h in (state.get("hotel_options") or []):
-            loc = h.get("location", "") or ""
-            if not loc and h.get("address"):
-                try:
-                    geo = amap_geocode(h["address"], city=dd or "")
-                    if geo:
-                        loc = geo.get("location", "")
-                        h["location"] = loc
-                except:
-                    pass
-            if loc and h.get("name"):
-                md["markers"].append({"name": h["name"], "location": loc, "day": 0, "type": "hotel"})
+            for h in (route.get("hotels") or []):
+                loc = h.get("location", "") or ""
+                if not loc and h.get("address"):
+                    try:
+                        geo = amap_geocode(h["address"], city=dd or "")
+                        if geo:
+                            loc = geo.get("location", "")
+                            h["location"] = loc
+                    except:
+                        pass
+                if loc and h.get("name"):
+                    md["markers"].append({"name": h["name"], "location": loc, "day": 0, "type": "hotel"})
 
-        for d in (state.get("dining_recommendations") or []):
-            loc = d.get("location", "") or ""
-            if not loc and d.get("address"):
-                try:
-                    geo = amap_geocode(d["address"], city=dd or "")
-                    if geo:
-                        loc = geo.get("location", "")
-                        d["location"] = loc
-                except:
-                    pass
-            if loc and d.get("name"):
-                md["markers"].append({"name": d["name"], "location": loc, "day": 0, "type": "restaurant"})
+            for d in (route.get("dining") or []):
+                loc = d.get("location", "") or ""
+                if not loc and d.get("address"):
+                    try:
+                        geo = amap_geocode(d["address"], city=dd or "")
+                        if geo:
+                            loc = geo.get("location", "")
+                            d["location"] = loc
+                    except:
+                        pass
+                if loc and d.get("name"):
+                    md["markers"].append({"name": d["name"], "location": loc, "day": 0, "type": "restaurant"})
+
+        # Build RoutePlan objects
+        route_plans = []
+        for r in routes:
+            route_plans.append(RoutePlan(
+                name=r.get("name", ""),
+                description=r.get("description", ""),
+                total_cost=r.get("total_cost", 0),
+                flights=r.get("flights", []),
+                hotels=r.get("hotels", []),
+                dining=r.get("dining", []),
+                budget=r.get("budget", []),
+                days=r.get("days", []),
+                map_data=r.get("map_data", {}),
+            ))
 
         plan = TripPlan(
             destination=dd or "", origin=req.get("origin") or "",
@@ -101,25 +116,18 @@ def create_travel_graph(llm: DirectLLM) -> StateGraph:
                 "weather": dest_info.get("weather", ""),
                 "tips": dest_info.get("tips", ""),
             },
-            flights=state.get("flight_options", []) or [],
-            hotels=state.get("hotel_options", []) or [],
-            dining=state.get("dining_recommendations", []) or [],
-            budget=budget_items,
-            days=state.get("itinerary", []) or [],
-            map_data=md,
+            routes=[r.model_dump(mode="json") for r in route_plans],
         )
         return {"trip_plan": plan.model_dump(mode="json")}
 
     builder = StateGraph(AgentState)
     builder.add_node("parallel", parallel_agents)
-    builder.add_node("budget", lambda s: ba(s))
-    builder.add_node("itinerary", lambda s: ia(s))
+    builder.add_node("route_planner", lambda s: rpa(s))
     builder.add_node("finalize", compile_plan)
 
     builder.add_edge(START, "parallel")
-    builder.add_edge("parallel", "budget")
-    builder.add_edge("budget", "itinerary")
-    builder.add_edge("itinerary", "finalize")
+    builder.add_edge("parallel", "route_planner")
+    builder.add_edge("route_planner", "finalize")
     builder.add_edge("finalize", END)
 
     return builder.compile()
