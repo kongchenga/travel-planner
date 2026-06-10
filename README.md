@@ -72,6 +72,7 @@ AI 驱动的智能旅行规划助手 — 基于 **LangGraph** 多 Agent 协作�
 | **Dining Agent** | 餐饮推荐、美食攻略 |
 | **Budget Agent** | 预算分配、费用估算、性价比分析 |
 | **Itinerary Agent** | 行程编排、路线优化、冲突检测 |
+| **Route Planner Agent** | 多路线规划与对比、实时路况分析 |
 
 ### 图状态编排
 - 基于 **LangGraph StateGraph** 构建有向图工作流
@@ -149,6 +150,7 @@ python backend/api.py
 ├── src/                    # 核心业务逻辑
 │   ├── agents/             # 专业 Agent
 │   │   ├── destination.py  # 目的地规划 Agent
+│   │   ├── route_planner.py # 路线规划 Agent
 │   │   ├── flight.py       # 机票查询 Agent
 │   │   ├── hotel.py        # 酒店推荐 Agent
 │   │   ├── dining.py       # 餐饮推荐 Agent
