@@ -174,6 +174,12 @@ python backend/api.py
 └── test_deepseek.py         # DeepSeek API 测试
 ```
 
+## 更新日志
+
+| 日期 | 内容 |
+|---|---|
+| 2026-06 | 重构路线规划 Agent，支持多路线对比；前端地图交互优化（标记聚合、路线高亮）；工具链升级（JSON 输出格式化、高德 API 错误处理） |
+
 ## 依赖
 
 ```txt
