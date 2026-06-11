@@ -390,18 +390,28 @@ def amap_direction(
             })
     else:
         for route in data.get("route", {}).get(route_key, []):
-            # Extract polyline from steps
+            # Use _request to get polyline from extensions=all
             polyline = []
-            for step in route.get("steps", []):
-                poly = step.get("polyline", "")
-                if poly:
-                    for pt in poly.split(";"):
-                        parts = pt.split(",")
-                        if len(parts) == 2:
-                            try:
-                                polyline.append([float(parts[1]), float(parts[0])])
-                            except ValueError:
-                                pass
+            try:
+                p2 = params.copy()
+                p2["extensions"] = "all"
+                d2 = _request(path, p2)
+                if d2:
+                    r2 = d2.get("route", {})
+                    ps = r2.get(route_key, [])
+                    if ps:
+                        for step in ps[0].get("steps", []):
+                            poly = step.get("polyline", "")
+                            if poly:
+                                for pt in poly.split(";"):
+                                    parts = pt.split(",")
+                                    if len(parts) == 2:
+                                        try:
+                                            polyline.append([float(parts[1]), float(parts[0])])
+                                        except ValueError:
+                                            pass
+            except Exception:
+                pass
             results.append({
                 "distance_m": route.get("distance", ""),
                 "duration_s": route.get("duration", ""),

@@ -26,7 +26,7 @@ RETRY_BACKOFF_BASE = 1.5  # seconds, exponential: 1.5 → 2.25 → 3.375
 class DirectLLM:
     """Drop-in replacement for ChatOpenAI that calls the API directly."""
 
-    def __init__(self, model: str = "", temperature: float = 0.7, max_tokens: int = 8192):
+    def __init__(self, model: str = "", temperature: float = 0.7, max_tokens: int = 16384):
         self.model = model or os.getenv("OPENAI_MODEL_NAME") or "deepseek-chat"
         self.temperature = temperature
         self.max_tokens = max_tokens

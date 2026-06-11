@@ -55,7 +55,6 @@ function showErr(msg) {
 }
 
 function renderPlan(tp) {
-  console.log('renderPlan called, destination:', tp && tp.destination);
   if (!tp || !tp.destination) { $("res-plan").innerHTML = "<div class=rc><div class=rc-b><p>无数据</p></div></div>"; return; }
 
   var routes = tp.routes || [];
@@ -63,6 +62,8 @@ function renderPlan(tp) {
   // Plan tab: show first route details (days + budget)
   if (routes.length > 0) {
     var r0 = routes[0];
+    // Debug: check days length
+    if (typeof console !== 'undefined') console.log('r0.days.length:', r0.days ? r0.days.length : 'null', 'r0.name:', r0.name);
     var budgetHtml = "";
     if (r0.budget && r0.budget.length) {
       var bg = r0.budget;
@@ -167,7 +168,7 @@ function buildDaysHtml(days, cls) {
 function buildRoutesHtml(routes, tp) {
   if (!routes || !routes.length) return "<div class=rc><div class=rc-b><p>暂未生成路线，请先规划行程</p></div></div>";
 
-  var colorPalette = ["#6366f1", "#10b981", "#f59e0b"];
+  var colorPalette = ["#059669", "#F59E0B", "#3B82F6", "#EF4444"];
   var totalBudget = tp.total_budget || 1;
 
   // Header
@@ -236,7 +237,7 @@ function switchRouteView(idx) {
   }
 
   // Build detail view
-  var colMap = ["#6366f1", "#10b981", "#f59e0b"];
+  var colMap = ["#059669", "#F59E0B", "#3B82F6", "#EF4444"];
   var col = colMap[idx % colMap.length];
   var detail = "";
 
@@ -330,7 +331,7 @@ function sec(type, data, tp) {
   if (type === "hotels") { var tiers = {economy:"经济",comfort:"舒适",luxury:"豪华"}; var b = data.map(function(h){var l="<span class=rc-name>"+esc(h.name)+"</span><span class=rc-meta>"+(h.rating||"-")+" · "+tiers[h.tier]+" · Y"+(h.price_per_night||"?")+"/晚</span><span class=rc-addr>"+esc(h.address)+(h.phone?" · "+esc(h.phone):"")+"</span>"; return "<p>"+l+"</p>";}).join(""); return card(s.i, s.l, s.c, b); }
   if (type === "dining") { var b = data.map(function(d){var l="<span class=rc-name>"+esc(d.name)+"</span><span class=rc-meta>"+esc(d.cuisine)+" · "+(d.rating||"-")+" · Y"+(d.price_per_person||"?")+"/人</span><span class=rc-addr>"+esc(d.address)+(d.phone?" · "+esc(d.phone):"")+"</span>"; return "<p>"+l+"</p>";}).join(""); return card(s.i, s.l, s.c, b); }
   if (type === "budget") { var bg = data; var mx = 1; for(var i=0;i<bg.length;i++){if(bg[i].percentage>mx)mx=bg[i].percentage;} var bars=""; for(var i=0;i<bg.length;i++){var b=bg[i];var w=Math.round((b.percentage/mx)*100); bars+="<div style=display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:10px><span style=width:40px;color:var(--tx2)>"+esc(b.category)+"</span><div style=flex:1;height:5px;background:var(--srf2);border-radius:3px;overflow:hidden><div style=height:100%;width:"+w+"%;background:linear-gradient(90deg,#6c5ce7,#00cec9);border-radius:3px></div></div><span style=width:50px;text-align:right;font-weight:600;color:var(--pr2)>"+(b.amount||0)+"</span><span style=width:20px;text-align:right;color:var(--tx3)>"+(b.percentage||0)+"%</span></div>";} var hdr="<div style=margin-bottom:4px><b>总计: "+(tp.total_budget||0)+(tp.currency||"")+"</b></div>"; return card(s.i, s.l, s.c, hdr+bars); }
-  if (type === "days") { var dh=""; for(var i=0;i<data.length;i++){var day=data[i];var num=day.day_number||(i+1);var acts="";if(day.activities){for(var j=0;j<day.activities.length;j++){var a=day.activities[j];var pts=[];if(a.location)pts.push(esc(a.location));if(a.transport)pts.push(esc(a.transport));if(a.duration_min)pts.push(a.duration_min+"分钟");if(a.cost)pts.push("¥"+a.cost);var pStr=pts.join(" | ");acts+="<div style=display:flex;gap:6px;padding:2px 0><div style=width:5px;height:5px;border-radius:50%;background:var(--pr2);margin-top:4px;flex-shrink:0></div><div style=flex:1><div style=font-size:9px;font-weight:600;color:var(--pr2)>"+esc(a.time_slot)+"</div><div style=font-size:11px;color:var(--txt)>"+esc(a.description)+"</div><div style=font-size:9px;color:var(--tx2)>"+pStr+"</div></div></div>";}} dh+="<div class=\"day-section\" data-day=\""+num+"\" style=background:var(--srf2);border-radius:8px;padding:8px 10px;margin-bottom:5px;border:1px solid var(--brd)><div style=display:flex;align-items:baseline;gap:5px;margin-bottom:4px><span style=width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--ac));color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700>"+num+"</span><span style=font-weight:600;font-size:11px>"+esc(day.title||"")+"</span>"+(day.date?"<span style=font-size:9px;color:var(--tx3)>"+esc(day.date)+"</span>":"")+"</div>"+(acts||"<p style=color:var(--tx3);font-size:10px>---</p>")+"</div>";} return card(s.i, s.l, s.c, dh); }
+  if (type === "days") { var dh=""; for(var i=0;i<data.length;i++){var day=data[i];var num=day.day_number||(i+1);var acts="";if(day.activities){for(var j=0;j<day.activities.length;j++){var a=day.activities[j];var pts=[];if(a.location)pts.push(esc(a.location));if(a.transport)pts.push(esc(a.transport));if(a.duration_min)pts.push(a.duration_min+"分钟");if(a.cost)pts.push("Y"+a.cost);var pStr=pts.join(" | ");acts+="<div style=display:flex;gap:6px;padding:2px 0><div style=width:5px;height:5px;border-radius:50%;background:var(--pr2);margin-top:4px;flex-shrink:0></div><div style=flex:1><div style=font-size:9px;font-weight:600;color:var(--pr2)>"+esc(a.time_slot)+"</div><div style=font-size:11px;color:var(--txt)>"+esc(a.description)+"</div><div style=font-size:9px;color:var(--tx2)>"+pStr+"</div></div></div>";}} dh+="<div class=\"day-section\" data-day=\""+num+"\" style=background:var(--srf2);border-radius:8px;padding:8px 10px;margin-bottom:5px;border:1px solid var(--brd)><div style=display:flex;align-items:baseline;gap:5px;margin-bottom:4px><span style=width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--pr),var(--ac));color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700>"+num+"</span><span style=font-weight:600;font-size:11px>"+esc(day.title||"")+"</span>"+(day.date?"<span style=font-size:9px;color:var(--tx3)>"+esc(day.date)+"</span>":"")+"</div>"+(acts||"<p style=color:var(--tx3);font-size:10px>---</p>")+"</div>";} return card(s.i, s.l, s.c, dh); }
   return "";
 }
 

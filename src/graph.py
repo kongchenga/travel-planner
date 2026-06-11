@@ -54,11 +54,18 @@ def create_travel_graph(llm: DirectLLM) -> StateGraph:
         if isinstance(routes, str):
             try:
                 routes = json.loads(routes)
-            except:
+            except Exception as e:
+                log.error("compile_plan: failed to parse routes json: %s", e)
                 routes = []
+        if not isinstance(routes, list):
+            log.error("compile_plan: routes is not a list, got %s", type(routes).__name__)
+            routes = []
 
         # For each route: geocode hotel/dining locations, normalize map_data
         for route in routes:
+            if not isinstance(route, dict):
+                log.warning("compile_plan: skipping non-dict route: %s", type(route).__name__)
+                continue
             md = route.get("map_data", {})
             if "markers" not in md:
                 md["markers"] = []

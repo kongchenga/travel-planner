@@ -68,23 +68,51 @@ def parse_json(text: str, model: Type[T]) -> T | list[T]:
                 except (TypeError, ValueError):
                     continue
             if not parsed:
-                # Last resort: if JSON parsed but Pydantic rejected all items,
-                # try to salvage by passing items as dicts directly
-                log.warning("parse_json: %d items parsed from JSON but none validated as %s",
+                # Salvage: build RoutePlan dicts manually by cherry-picking valid items
+                log.warning("parse_json: %d items parsed from JSON but none validated as %s, salvaging...",
                             len(data), model.__name__)
                 for item in data:
-                    if isinstance(item, dict) and item.get("name") and item.get("days"):
-                        # Force-create a valid object
+                    if isinstance(item, dict):
                         try:
-                            parsed.append(model(**{k: item.get(k, "" if isinstance(v, str) else []) for k, v in model.model_fields.items()}))
-                        except:
-                            pass
+                            # Direct dict construction bypassing Pydantic validation
+                            flat = {}
+                            for k, v in model.model_fields.items():
+                                if k in item:
+                                    if k == 'days' and isinstance(item[k], list):
+                                        # Flatten DayPlans manually
+                                        flat[k] = item[k]
+                                    else:
+                                        flat[k] = item.get(k, v.default if v.default is not None else ([] if 'list' in str(v.annotation) else ''))
+                            parsed.append(model(**flat))
+                        except Exception as e2:
+                            log.debug("salvage item failed: %s", e2)
                 if not parsed:
+                    log.error("parse_json: could not salvage any items from %d parsed dicts", len(data))
                     return [model()]
             return parsed
         return model(**data)
     except (json.JSONDecodeError, TypeError, ValueError) as e:
-        log.warning("parse_json failed: %s, text[:100]=%s", e, repr(text[:100]))
+        log.warning("parse_json failed: %s", e)
+        # Ultimate fallback: try json.JSONDecoder for known issues
+        try:
+            if "Unterminated string" in str(e):
+                # Try to repair truncated JSON by closing brackets
+                repaired = _extract_json(text)
+                repaired = repaired.rstrip() + "]"
+                data2 = json.loads(repaired)
+                if isinstance(data2, list):
+                    parsed = []
+                    for item in data2:
+                        if isinstance(item, dict) and item.get('name'):
+                            try:
+                                parsed.append(model(**item))
+                            except:
+                                pass
+                    if parsed:
+                        log.info("parse_json: repaired truncated JSON, salvaged %d items", len(parsed))
+                        return parsed
+        except:
+            pass
         return model()
 
 

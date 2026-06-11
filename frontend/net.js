@@ -71,7 +71,11 @@ function listenSSE(sid) {
       window._routeMapData = (tp && tp.routes || []).map(function(r) { return r.map_data || {}; });
       var md = window._routeMapData.length > 0 ? window._routeMapData[0] : null;
       if (md && md.markers && md.markers.length) {
-        setTimeout(function() { try { renderRoutes(md, 0); } catch(err2) { console.error("map render error", err2); } }, 300);
+        setTimeout(function() {
+          try { renderRoutes(md, 0); dimMarkers(0); } catch(err2) { console.error("map render error", err2); }
+        }, 500);
+      } else {
+        console.log("No map data to render:", md ? (md.markers ? md.markers.length : "null markers") : "null md");
       }
     } catch(err3) { console.error("map data error", err3); }
     goBtn.disabled = false; goBtn.classList.remove("loading");
